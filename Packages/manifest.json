@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.neuecc.messagepack": "2.4.35",
     "com.neuecc.unirx": "7.1.0",
     "com.cysharp.unitask": "2.3.3",
     "jp.hadashikick.vcontainer": "1.13.1",
