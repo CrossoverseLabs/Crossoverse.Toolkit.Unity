@@ -171,6 +171,18 @@
       },
       "url": "https://packages.unity.com"
     },
+    "dev.crossoverse.toolkit.serialization": {
+      "version": "file:Crossoverse.Toolkit.Serialization",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "dev.crossoverse.toolkit.transports": {
+      "version": "file:./Crossoverse.Toolkit.Transports/Core",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "jp.hadashikick.vcontainer": {
       "version": "1.13.1",
       "depth": 0,
