@@ -77,7 +77,8 @@ namespace Crossoverse.Toolkit.Utility.ImageGenerator
         
         private async Task SavePngImage()
         {
-            var savePath = $"{_saveDirectoryPath}/Image_{_saveImageCount}.png";
+            var numberText = _saveImageCount.ToString("d2");
+            var savePath = $"{_saveDirectoryPath}/Image_{numberText}.png";
             using (var sourceStream = new FileStream(savePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, 8192, true))
             {
                 await sourceStream.WriteAsync(_pngImageBytes, 0, _pngImageBytes.Length);
