@@ -1,7 +1,9 @@
 {
     "name": "Crossoverse.Toolkit.DynamicResourceManager",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "UniTask"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

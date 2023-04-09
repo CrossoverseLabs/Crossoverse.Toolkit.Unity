@@ -33,11 +33,13 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         
         private AsyncTaskDispatcher<ImageObject> _asyncTaskDispatcher;
         private HttpClient _httpClient;
+        private WebResourceProvider _resourceProvider;
         
         void OnDestroy()
         {
             _asyncTaskDispatcher?.Dispose();
             _httpClient?.Dispose();
+            _resourceProvider?.Dispose();
         }
         
         void Awake()
@@ -45,6 +47,7 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
             // return;
             Debug.Log($"Awake");
             _httpClient = new HttpClient();
+            _resourceProvider = new WebResourceProvider(new ResourceRepository());
             
             _asyncTaskDispatcher = new AsyncTaskDispatcher<ImageObject>();
             _asyncTaskDispatcher.AsyncTaskEvent += async (sender, eventArgs, cancellationToken) =>
@@ -62,23 +65,28 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
                 // using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 
                 await UniTask.SwitchToMainThread();
-                using var request = new UnityWebRequest(url);
-                request.downloadHandler = new DownloadHandlerBuffer();
+                // using var request = new UnityWebRequest(url);
+                // request.downloadHandler = new DownloadHandlerBuffer();
                 
                 await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken: cancellationToken);
                 
                 try
                 {
-                    await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
-                    var imageBytes = request.downloadHandler.data;
+                    var resource = await _resourceProvider.LoadImageAsync(data.BaseUrl, data.Filename);
+                    // await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
+                    // var imageBytes = request.downloadHandler.data;
 
                     // var response = await _httpClient.SendAsync(request, cancellationToken);
                     // var imageBytes = await response.Content.ReadAsByteArrayAsync();
                     
                     // Debug.Log($"[AsyncTaskEvent] ThreadId: {System.Environment.CurrentManagedThreadId}");
                     
-                    // await UniTask.SwitchToMainThread();
-                    data.View.SetTexture2D(imageBytes);
+                    await UniTask.SwitchToMainThread();
+                    if (resource is not null)
+                    {
+                        data.View.SetTexture2D(resource.As<Texture2D>());
+                    }
+                    // data.View.SetTexture2D(imageBytes);
                     // await UniTask.SwitchToThreadPool();
                 }
                 catch (Exception e)
