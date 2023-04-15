@@ -11,12 +11,14 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
     {
         private readonly string _cacheDirectory;
         private readonly IResourceRepository _repository;
+        private readonly ImageProcessing.IDecoder _imageDecoder;
         private readonly HttpClient _httpClient;
         
-        public WebResourceProvider(IResourceRepository repository)
+        public WebResourceProvider(IResourceRepository repository, ImageProcessing.IDecoder imageDecoder)
         {
             _cacheDirectory = Path.Combine(Application.temporaryCachePath, "ResourceProvider");
             _repository = repository;
+            _imageDecoder = imageDecoder;
             _httpClient = new HttpClient();
             Debug.Log($"[{nameof(WebResourceProvider)}] Cache directory: {_cacheDirectory}");
         }
@@ -25,13 +27,39 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
         {
             _httpClient.Dispose();
         }
-        
-        public async UniTask<Resource> LoadImageAsync(string basePath, string filename, bool useCache = true)
+
+        public void ClearAllCachedData()
         {
-            await UniTask.SwitchToThreadPool();
-            
-            var path = Path.Combine(basePath, filename);
-            var key = ComputeHash(path).Replace("-", "");
+            if (Directory.Exists(_cacheDirectory))
+            {
+                var filePaths = Directory.GetFiles(_cacheDirectory);
+                foreach (var filePath in filePaths)
+                {
+                    File.Delete(filePath);
+                }
+            }
+        }
+
+        public void ClearCachedData(string baseUrl, string filename)
+        {
+            var url = $"{baseUrl}/{filename}";
+            var key = ComputeHash(url).Replace("-", "");
+            ClearCachedData(key);
+        }
+
+        public void ClearCachedData(string key)
+        {
+            var cachedFilePath = Path.Combine(_cacheDirectory, key);
+            if (File.Exists(cachedFilePath))
+            {
+                File.Delete(cachedFilePath);
+            }
+        }
+        
+        public async UniTask<Resource> LoadImageAsync(string baseUrl, string filename, bool useCache = true)
+        {
+            var url = $"{baseUrl}/{filename}";
+            var key = ComputeHash(url).Replace("-", "");
             
             // Loaded resource
             if (_repository.TryGet(key, out var loadedResource))
@@ -39,59 +67,60 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
                 var loadedResourceType = loadedResource.Object.GetType();
                 if (loadedResourceType == typeof(Texture2D))
                 {
-                    Debug.Log($"[{nameof(WebResourceProvider)}] In-memory repository hit for {path}");
+                    Debug.Log($"[{nameof(WebResourceProvider)}] In-memory repository hit for {url}");
                     return loadedResource;
                 }
-                Debug.LogError($"[{nameof(WebResourceProvider)}] In-memory repository error. ResourceType: {loadedResourceType}, Path: {path}");
+                Debug.LogError($"[{nameof(WebResourceProvider)}] In-memory repository error. ResourceType: {loadedResourceType}, Url: {url}");
                 return null;
             }
             
             Resource resource;
             Texture2D texture;
-            
+
+            await UniTask.SwitchToThreadPool();
+
             // Cached resource
             var cacheFilePath = Path.Combine(_cacheDirectory, key);
             if (File.Exists(cacheFilePath))
             {
                 if (useCache)
                 {
-                    Debug.Log($"[{nameof(WebResourceProvider)}] Cache hit for {path}");
+                    Debug.Log($"[{nameof(WebResourceProvider)}] Cache hit for {url}");
                     
                     var cacheFileBytes = await File.ReadAllBytesAsync(cacheFilePath);
-                    
+                    var image1 = _imageDecoder.Decode(cacheFileBytes);
+
                     await UniTask.SwitchToMainThread();
-                    
-                    texture = new Texture2D(2, 2);
-                    if (texture.LoadImage(cacheFileBytes))
+
+                    var textureFormat1 = image1.Format switch
                     {
-                        resource = new Resource(key, texture);
-                        _repository.Add(key, resource);
-                        return resource;
-                    }
+                        ImageProcessing.ColorFormat.RGBA32 => TextureFormat.RGBA32,
+                        ImageProcessing.ColorFormat.RGB24 => TextureFormat.RGB24,
+                        _ => TextureFormat.RGBA32,
+                    };
+                    
+                    texture = new Texture2D(image1.Width, image1.Height, textureFormat1, false);
+                    texture.LoadRawTextureData(image1.Data);
+                    texture.Apply();
+
+                    resource = new Resource(key, texture);
+                    _repository.Add(key, resource);                    
+                    return resource;
                 }
                 else
                 {
                     File.Delete(cacheFilePath);
                 }
             }
-            
-            await UniTask.SwitchToThreadPool();
+
+            // await UniTask.SwitchToThreadPool();
             
             // Download resource
-            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
             var response = await _httpClient.SendAsync(request);
             var imageBytes = await response.Content.ReadAsByteArrayAsync();
-            
-            await UniTask.SwitchToMainThread();
-            
-            texture = new Texture2D(2, 2);
-            if (!texture.LoadImage(imageBytes))
-            {
-                return null;
-            }
-            
-            await UniTask.SwitchToMainThread();
-            
+            var image = _imageDecoder.Decode(imageBytes);
+
             if (useCache)
             {
                 if (!Directory.Exists(_cacheDirectory))
@@ -100,10 +129,22 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
                 }
                 await File.WriteAllBytesAsync(cacheFilePath, imageBytes);
             }
+
+            await UniTask.SwitchToMainThread();
+
+            var textureFormat = image.Format switch
+            {
+                ImageProcessing.ColorFormat.RGBA32 => TextureFormat.RGBA32,
+                ImageProcessing.ColorFormat.RGB24 => TextureFormat.RGB24,
+                _ => TextureFormat.RGBA32,
+            };
+            
+            texture = new Texture2D(image.Width, image.Height, textureFormat, false);
+            texture.LoadRawTextureData(image.Data);
+            texture.Apply();
             
             resource = new Resource(key, texture);
             _repository.Add(key, resource);
-            
             return resource;
         }
         
@@ -111,9 +152,7 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
         {
             if (_repository.TryRemove(key, out var loadedResource))
             {
-                // Can't unload prefabs: https://forum.unity.com/threads/393385.
-                // if (resource.Object is GameObject || resource.Object is Component) return;
-                Resources.UnloadAsset(loadedResource.Object);
+                GameObject.Destroy(loadedResource.Object);
             }
         }
         

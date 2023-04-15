@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
-using UnityEngine.Networking;
+using Crossoverse.Toolkit.ImageProcessing;
 
 namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
 {
@@ -15,6 +14,7 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         public ImageObjectView View;
         public string BaseUrl;
         public string Filename;
+        public string ResourceKey;
         internal bool IsRequested;
     }
     
@@ -30,13 +30,16 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         [SerializeField] private List<string> _imageFileNames = new List<string>();
         
         private readonly List<ImageObject> _imageObjects = new List<ImageObject>();
+        private readonly int _unloadPriority = -10;
         
         private AsyncTaskDispatcher<ImageObject> _asyncTaskDispatcher;
+        private AsyncTaskDispatcher<ImageObject> _unloadTaskDispatcher;
         private HttpClient _httpClient;
         private WebResourceProvider _resourceProvider;
         
         void OnDestroy()
         {
+            _unloadTaskDispatcher?.Dispose();
             _asyncTaskDispatcher?.Dispose();
             _httpClient?.Dispose();
             _resourceProvider?.Dispose();
@@ -44,11 +47,13 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         
         void Awake()
         {
-            // return;
-            Debug.Log($"Awake");
+            Debug.Log($"[ImageLoaderSample] Awake");
+
             _httpClient = new HttpClient();
-            _resourceProvider = new WebResourceProvider(new ResourceRepository());
+            _resourceProvider = new WebResourceProvider(new ResourceRepository(), new StbImageDecoder());
             
+            // _resourceProvider.ClearAllCachedData();
+
             _asyncTaskDispatcher = new AsyncTaskDispatcher<ImageObject>();
             _asyncTaskDispatcher.AsyncTaskEvent += async (sender, eventArgs, cancellationToken) =>
             {
@@ -62,32 +67,22 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
                 // Debug.Log($"[AsyncTaskEvent] Priority: {priority}, Image: {data.Filename}");
                 
                 var url = $"{data.BaseUrl}/{data.Filename}";
-                // using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                
-                await UniTask.SwitchToMainThread();
-                // using var request = new UnityWebRequest(url);
-                // request.downloadHandler = new DownloadHandlerBuffer();
                 
                 await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken: cancellationToken);
-                
+
                 try
                 {
                     var resource = await _resourceProvider.LoadImageAsync(data.BaseUrl, data.Filename);
-                    // await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
-                    // var imageBytes = request.downloadHandler.data;
 
-                    // var response = await _httpClient.SendAsync(request, cancellationToken);
-                    // var imageBytes = await response.Content.ReadAsByteArrayAsync();
-                    
                     // Debug.Log($"[AsyncTaskEvent] ThreadId: {System.Environment.CurrentManagedThreadId}");
                     
-                    await UniTask.SwitchToMainThread();                    
+                    await UniTask.SwitchToMainThread();
+
                     if (resource is not null)
                     {
+                        data.ResourceKey = resource.Key;
                         data.View.SetTexture2D(resource.As<Texture2D>());
                     }
-                    // data.View.SetTexture2D(imageBytes);
-                    // await UniTask.SwitchToThreadPool();
                 }
                 catch (Exception e)
                 {
@@ -97,6 +92,22 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
                 }
 
                 // Debug.Log($"[AsyncTaskEvent] End of AsyncTaskEvent");
+                return true;
+            };
+
+            _unloadTaskDispatcher = new AsyncTaskDispatcher<ImageObject>();
+            _unloadTaskDispatcher.AsyncTaskEvent += async (sender, eventArgs, cancellationToken) =>
+            {
+                var priority = eventArgs.Priority;
+                var data = eventArgs.Data;
+
+                await UniTask.SwitchToMainThread();
+
+                data.View.SetDefault();
+                _resourceProvider.UnloadResource(data.ResourceKey);
+
+                data.IsRequested = false;
+
                 return true;
             };
             
@@ -127,24 +138,32 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         void Update()
         {
             foreach (var imageObject in _imageObjects)
-            {
+        {
+                var imageObjectPosition = imageObject.View.transform.position;
+                var playerPosition = _playerTransform.position;
+                var playerForwardDirection = _playerTransform.forward;
+                
+                var priority = CalculatePriority(imageObjectPosition, playerPosition, playerForwardDirection);
+
                 if (!imageObject.IsRequested)
                 {
                     imageObject.IsRequested = true;
                     
-                    var imageObjectPosition = imageObject.View.transform.position;
-                    var playerPosition = _playerTransform.position;
-                    var playerForwardDirection = _playerTransform.forward;
-                    
-                    var priority = CalculatePriority(imageObjectPosition, playerPosition, playerForwardDirection);
                     if (priority >= 0)
                     {
-                        imageObject.IsRequested = true;
                         imageObject.View.SetRequested();
                         _asyncTaskDispatcher.Enqueue(priority, imageObject);
                     }
                     else
                     {
+                        imageObject.IsRequested = false;
+                    }
+                }
+                else
+                {
+                    if (priority == _unloadPriority)
+                    {
+                        _unloadTaskDispatcher.Enqueue(priority, imageObject);
                         imageObject.IsRequested = false;
                     }
                 }
@@ -170,6 +189,10 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
             {
                 var score = Mathf.RoundToInt(distance * 1000 + dot * 100);
                 return score;
+            }
+            else if (distance > _viewDistance * 2)
+            {
+                return _unloadPriority;
             }
             
             return -1;

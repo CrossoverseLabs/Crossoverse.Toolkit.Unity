@@ -9,20 +9,22 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
         [SerializeField] private Texture2D _requestedStatusTexture;
         [SerializeField] private Texture2D _errorStatusTexture;
         
-        private Texture2D _texture;
-        
         void Awake()
         {
-            _texture = new Texture2D(2, 2);
             _meshRenderer.material.mainTexture = _defaultTexture;
         }
         
-        public void SetTexture2D(byte[] bytes)
+        public bool SetTexture2D(Texture2D texture)
         {
-            _texture.LoadImage(bytes);
-            _meshRenderer.material.mainTexture = _texture;
+            _meshRenderer.material.mainTexture = texture;
+            return true;
         }
-        
+
+        public void SetDefault()
+        {
+            _meshRenderer.material.mainTexture = _defaultTexture;
+        }
+
         public void SetRequested()
         {
             _meshRenderer.material.mainTexture = _requestedStatusTexture;

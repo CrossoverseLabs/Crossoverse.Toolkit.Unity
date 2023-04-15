@@ -2,7 +2,8 @@
     "name": "Crossoverse.Toolkit.DynamicResourceManager",
     "rootNamespace": "",
     "references": [
-        "UniTask"
+        "UniTask",
+        "Crossoverse.Toolkit.ImageProcessing"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
