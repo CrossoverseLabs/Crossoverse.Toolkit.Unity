@@ -177,6 +177,12 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "dev.crossoverse.toolkit.imageprocessing": {
+      "version": "file:Crossoverse.Toolkit.ImageProcessing",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "dev.crossoverse.toolkit.serialization": {
       "version": "file:Crossoverse.Toolkit.Serialization",
       "depth": 0,
