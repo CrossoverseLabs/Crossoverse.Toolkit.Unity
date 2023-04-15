@@ -81,7 +81,7 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
                     
                     // Debug.Log($"[AsyncTaskEvent] ThreadId: {System.Environment.CurrentManagedThreadId}");
                     
-                    await UniTask.SwitchToMainThread();
+                    await UniTask.SwitchToMainThread();                    
                     if (resource is not null)
                     {
                         data.View.SetTexture2D(resource.As<Texture2D>());
@@ -130,6 +130,8 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
             {
                 if (!imageObject.IsRequested)
                 {
+                    imageObject.IsRequested = true;
+                    
                     var imageObjectPosition = imageObject.View.transform.position;
                     var playerPosition = _playerTransform.position;
                     var playerForwardDirection = _playerTransform.forward;
@@ -140,6 +142,10 @@ namespace Crossoverse.Toolkit.DynamicResourceManager.Samples
                         imageObject.IsRequested = true;
                         imageObject.View.SetRequested();
                         _asyncTaskDispatcher.Enqueue(priority, imageObject);
+                    }
+                    else
+                    {
+                        imageObject.IsRequested = false;
                     }
                 }
             }
