@@ -33,9 +33,12 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
         private readonly CancellationTokenSource _ctsLoop;
         private readonly CancellationTokenSource _ctsAction;
         private readonly Thread _thread;
+        private readonly int _frameDurationMilliseconds;
         
-        public AsyncTaskDispatcher()
+        public AsyncTaskDispatcher(int targetFrameRate = 30)
         {
+            _frameDurationMilliseconds = (int)(1000.0f / targetFrameRate);
+            
             _queue = new ConcurrentPriorityQueue<int, TData>();
             _ctsLoop = new CancellationTokenSource();
             _ctsAction = new CancellationTokenSource();
@@ -64,20 +67,28 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
         
         private async void RunLoop()
         {
-            UnityEngine.Debug.Log($"[{nameof(AsyncTaskDispatcher<TData>)}] Beginning of RunLoop.");
+            UnityEngine.Debug.Log($"[{nameof(AsyncTaskDispatcher<TData>)}] Beginning of RunLoop. Thread ID: {Environment.CurrentManagedThreadId}");
+            
+            var tic = new TimeSpan(DateTime.Now.Ticks);
             
             while (!_ctsLoop.IsCancellationRequested)
             {
-                if (_queue.Count > 0 && _queue.TryPeek(out var keyValuePair))
+                var toc = new TimeSpan(DateTime.Now.Ticks);
+                if (toc.Subtract(tic).Duration().Milliseconds >= _frameDurationMilliseconds)
                 {
-                    if (AsyncTaskEvent != null)
+                    tic = new TimeSpan(DateTime.Now.Ticks);
+                    
+                    if (_queue.Count > 0 && _queue.TryDequeue(out var keyValuePair))
                     {
-                        var priority = keyValuePair.Key;
-                        var data = keyValuePair.Value;
-                        
-                        var done = await AsyncTaskEvent.Invoke(this, new AsyncTaskEventArgs<TData>(priority, data), _ctsAction.Token);
-                        
-                        if (done) { _queue.TryDequeue(out _); }
+                        if (AsyncTaskEvent != null)
+                        {
+                            var priority = keyValuePair.Key;
+                            var data = keyValuePair.Value;
+                            
+                            var done = await AsyncTaskEvent.Invoke(this, new AsyncTaskEventArgs<TData>(priority, data), _ctsAction.Token);
+                            
+                            if (!done) { _queue.Enqueue(keyValuePair); }
+                        }
                     }
                 }
             }

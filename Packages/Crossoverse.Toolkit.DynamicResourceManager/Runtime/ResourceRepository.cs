@@ -5,6 +5,7 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
 {
     public interface IResourceRepository
     {
+        int Count { get;  }
         void Add(string key, Resource resource);
         bool TryGet(string key, [NotNullWhen(true)] out Resource resource);
         bool TryRemove(string key, [NotNullWhen(true)] out Resource resource);
@@ -12,6 +13,8 @@ namespace Crossoverse.Toolkit.DynamicResourceManager
     
     public class ResourceRepository : IResourceRepository
     {
+        public int Count => _loadedResources.Count;
+        
         private readonly ConcurrentDictionary<string, Resource> _loadedResources = new ConcurrentDictionary<string, Resource>();
         
         public void Add(string key, Resource resource)
