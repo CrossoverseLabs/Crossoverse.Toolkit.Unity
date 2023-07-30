@@ -70,7 +70,7 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
             int targetFrameRate = 30,
             bool isBackgroundThread = false,
             ConnectionProtocol protocol = ConnectionProtocol.Udp,
-            ReceiverGroup receiverGroup = ReceiverGroup.Others
+            ReceiverGroup receiverGroup = ReceiverGroup.All
         )
         {
             _connectParameters = connectParameters;
@@ -129,8 +129,24 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
         /// </summary>
         /// <param name="serializedMessage"></param>
         /// <returns></returns>
-        public void Send(ArraySegment<byte> serializedMessage)
+        public void Send(ArraySegment<byte> serializedMessage, BufferingType bufferingType = BufferingType.DoNotBuffering,
+                            BroadcastingType broadcastingType = BroadcastingType.All, int[] destClientIds = null)
         {
+            _raiseEventOptions.CachingOption = bufferingType switch
+            {
+                BufferingType.DoNotBuffering => EventCaching.DoNotCache,
+                BufferingType.AddToBuffer => EventCaching.AddToRoomCache,
+                BufferingType.RemoveFromBuffer => EventCaching.RemoveFromRoomCache,
+                _ => EventCaching.DoNotCache,
+            };
+
+            _raiseEventOptions.Receivers = broadcastingType switch
+            {
+                BroadcastingType.All => ReceiverGroup.All,
+                BroadcastingType.ExceptSelf => ReceiverGroup.Others,
+                _ => throw new NotImplementedException(),
+            };
+
             _photonRealtimeClient.RaiseEvent(CrossoverseEventCode, serializedMessage.Array, _raiseEventOptions, SendOptions.SendReliable);
         }
 
