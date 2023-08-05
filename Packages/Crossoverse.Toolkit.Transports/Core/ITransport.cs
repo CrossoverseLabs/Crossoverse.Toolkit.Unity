@@ -15,7 +15,6 @@ namespace Crossoverse.Toolkit.Transports
         Task<bool> ConnectAsync(string roomId = "");
         Task DisconnectAsync();
         
-        void Send(ArraySegment<byte> data, BufferingType bufferingType = BufferingType.DoNotBuffering,
-                    BroadcastingType broadcastingType = BroadcastingType.All, int[] destClientIds = null);
+        void Send(ArraySegment<byte> data, SendOptions sendOptions = default, int[] destClientIds = null);
     }
 }
