@@ -76,7 +76,7 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
             PhotonRealtimeJoinParameters joinParameters,
             int targetFrameRate = 30,
             bool isBackgroundThread = false,
-            ConnectionProtocol protocol = ConnectionProtocol.Udp,
+            ConnectionProtocol protocol = ConnectionProtocol.Udp
         )
         {
             _connectParameters = connectParameters;
