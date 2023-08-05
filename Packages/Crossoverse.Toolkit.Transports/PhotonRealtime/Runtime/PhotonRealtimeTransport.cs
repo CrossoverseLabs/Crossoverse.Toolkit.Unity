@@ -43,12 +43,19 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
         
         public string PunVersion => _photonRealtimeClient.PunVersion;
         public AppSettings AppSettings => _connectParameters.AppSettings;
-        
+
+        private static readonly object keyByteZero = (byte)0;
+        private static readonly object keyByteOne = (byte)1;
+        private static readonly object keyByteTwo = (byte)2;
+        private static readonly object keyByteThree = (byte)3;
+
+        private readonly Hashtable _eventContent = new();
+        private readonly RaiseEventOptions _raiseEventOptions = new();
+
         private readonly PhotonRealtimeClient _photonRealtimeClient;
         private readonly PhotonRealtimeConnectParameters _connectParameters;
         private readonly PhotonRealtimeJoinParameters _joinParameters;
-        private readonly RaiseEventOptions _raiseEventOptions;
-        
+
         private bool _connected;
         private bool _joined;
         
@@ -70,18 +77,11 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
             int targetFrameRate = 30,
             bool isBackgroundThread = false,
             ConnectionProtocol protocol = ConnectionProtocol.Udp,
-            ReceiverGroup receiverGroup = ReceiverGroup.All
         )
         {
             _connectParameters = connectParameters;
             _joinParameters = joinParameters;
-            
-            _raiseEventOptions = new RaiseEventOptions
-            {
-                Receivers = receiverGroup,
-                CachingOption = EventCaching.DoNotCache,
-            };
-            
+
             _photonRealtimeClient = new PhotonRealtimeClient(punVersion, targetFrameRate, isBackgroundThread, protocol);
             _photonRealtimeClient.NetworkingClient.AddCallbackTarget(this);
         }
@@ -123,22 +123,23 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
         {
             await DisconnectAsyncCore();
         }
-        
+
         /// <summary>
-        /// Send
+        /// 
         /// </summary>
         /// <param name="serializedMessage"></param>
-        /// <returns></returns>
-        public void Send(ArraySegment<byte> serializedMessage, BufferingType bufferingType = BufferingType.DoNotBuffering,
-                            BroadcastingType broadcastingType = BroadcastingType.All, int[] destClientIds = null)
+        /// <param name="sendOptions"></param>
+        /// <param name="destClientIds"></param>
+        public void Send(ArraySegment<byte> serializedMessage, SendOptions sendOptions = default, int[] destClientIds = null)
         {
-            _raiseEventOptions.CachingOption = bufferingType switch
-            {
-                BufferingType.DoNotBuffering => EventCaching.DoNotCache,
-                BufferingType.AddToBuffer => EventCaching.AddToRoomCache,
-                BufferingType.RemoveFromBuffer => EventCaching.RemoveFromRoomCache,
-                _ => EventCaching.DoNotCache,
-            };
+            var reliability = sendOptions.Reliability;
+            var broadcastingType = sendOptions.BroadcastingType;
+            var bufferingType = sendOptions.BufferingType;
+            var bufferingKey = sendOptions.BufferingKey;
+
+            var photonSendOptions = reliability
+                                    ? ExitGames.Client.Photon.SendOptions.SendReliable
+                                    : ExitGames.Client.Photon.SendOptions.SendUnreliable;
 
             _raiseEventOptions.Receivers = broadcastingType switch
             {
@@ -147,7 +148,27 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
                 _ => throw new NotImplementedException(),
             };
 
-            _photonRealtimeClient.RaiseEvent(CrossoverseEventCode, serializedMessage.Array, _raiseEventOptions, SendOptions.SendReliable);
+            _raiseEventOptions.CachingOption = bufferingType switch
+            {
+                BufferingType.DoNotBuffering => EventCaching.DoNotCache,
+                BufferingType.AddToBuffer => EventCaching.AddToRoomCache,
+                BufferingType.RemoveFromBuffer => EventCaching.RemoveFromRoomCache,
+                _ => EventCaching.DoNotCache,
+            };
+
+            _eventContent.Clear();
+            if (bufferingType is BufferingType.AddToBuffer || bufferingType is BufferingType.RemoveFromBuffer)
+            {
+                _eventContent[keyByteZero] = bufferingKey.FirstKey;
+                _eventContent[keyByteOne] = bufferingKey.SecondKey;
+                _eventContent[keyByteTwo] = bufferingKey.ThirdKey;
+            }
+            if (bufferingType is not BufferingType.RemoveFromBuffer)
+            {
+                _eventContent[keyByteThree] = serializedMessage.Array;
+            }
+
+            _photonRealtimeClient.RaiseEvent(CrossoverseEventCode, _eventContent, _raiseEventOptions, photonSendOptions);
         }
 
         /// <summary>
@@ -159,7 +180,8 @@ namespace Crossoverse.Toolkit.Transports.PhotonRealtime
             if (eventData.Code == CrossoverseEventCode)
             {
                 // Log($"[PhotonRealtimeTransport] OnEvent - Sender:{eventData.Sender}, EventCode:{eventData.Code}");
-                var serializedMessage = (byte[])eventData.CustomData;
+                var contentData = (Hashtable)eventData.CustomData;
+                var serializedMessage = (byte[])contentData[keyByteThree];
                 OnReceiveMessage?.Invoke(serializedMessage);
             }
         }
