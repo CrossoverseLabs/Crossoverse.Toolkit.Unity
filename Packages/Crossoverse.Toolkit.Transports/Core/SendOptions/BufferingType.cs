@@ -1,6 +1,6 @@
 namespace Crossoverse.Toolkit.Transports
 {
-    public enum BufferingType
+    public enum BufferingType : byte
     {
         DoNotBuffering = 0,
         AddToBuffer = 1,

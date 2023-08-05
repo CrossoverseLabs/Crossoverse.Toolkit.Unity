@@ -1,6 +1,6 @@
 namespace Crossoverse.Toolkit.Transports
 {
-    public enum BroadcastingType
+    public enum BroadcastingType : byte
     {
         All = 0,
         ExceptSelf = 1,
