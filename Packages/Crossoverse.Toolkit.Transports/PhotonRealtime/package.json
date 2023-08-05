@@ -1,7 +1,7 @@
 {
     "name": "dev.crossoverse.toolkit.transports.photonrealtime",
     "displayName": "Crossoverse.Toolkit.Transports.PhotonRealtime",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "unity": "2021.3",
     "license": "MIT",
     "author": { "name": "Crossoverse Labs" }
