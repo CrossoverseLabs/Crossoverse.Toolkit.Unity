@@ -172,25 +172,25 @@
       "url": "https://packages.unity.com"
     },
     "dev.crossoverse.toolkit.dynamicresourcemanager": {
-      "version": "file:Crossoverse.Toolkit.DynamicResourceManager",
+      "version": "file:../../../src/Crossoverse.Toolkit.DynamicResourceManager",
       "depth": 0,
-      "source": "embedded",
+      "source": "local",
       "dependencies": {}
     },
     "dev.crossoverse.toolkit.imageprocessing": {
-      "version": "file:Crossoverse.Toolkit.ImageProcessing",
+      "version": "file:../../../src/Crossoverse.Toolkit.ImageProcessing",
       "depth": 0,
-      "source": "embedded",
+      "source": "local",
       "dependencies": {}
     },
     "dev.crossoverse.toolkit.serialization": {
-      "version": "file:Crossoverse.Toolkit.Serialization",
+      "version": "file:../../../src/Crossoverse.Toolkit.Serialization",
       "depth": 0,
-      "source": "embedded",
+      "source": "local",
       "dependencies": {}
     },
     "dev.crossoverse.toolkit.transports": {
-      "version": "file:./Crossoverse.Toolkit.Transports/Core",
+      "version": "file:../../../src/Crossoverse.Toolkit.Transports/Core",
       "depth": 0,
       "source": "local",
       "dependencies": {}

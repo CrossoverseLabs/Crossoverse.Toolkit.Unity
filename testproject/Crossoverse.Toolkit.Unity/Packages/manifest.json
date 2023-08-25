@@ -1,8 +1,9 @@
 {
   "dependencies": {
-    "dev.crossoverse.toolkit.dynamicresourcemanager": "file:./Crossoverse.Toolkit.DynamicResourceManager",
-    "dev.crossoverse.toolkit.serialization": "file:./Crossoverse.Toolkit.Serialization",
-    "dev.crossoverse.toolkit.transports": "file:./Crossoverse.Toolkit.Transports/Core",
+    "dev.crossoverse.toolkit.dynamicresourcemanager": "file:../../../src/Crossoverse.Toolkit.DynamicResourceManager",
+    "dev.crossoverse.toolkit.imageprocessing": "file:../../../src/Crossoverse.Toolkit.ImageProcessing",
+    "dev.crossoverse.toolkit.serialization": "file:../../../src/Crossoverse.Toolkit.Serialization",
+    "dev.crossoverse.toolkit.transports": "file:../../../src/Crossoverse.Toolkit.Transports/Core",
     "com.neuecc.messagepack": "2.4.35",
     "com.neuecc.unirx": "7.1.0",
     "com.cysharp.unitask": "2.3.3",
