@@ -66,12 +66,12 @@ namespace Crossoverse.Toolkit.SceneTransition
                     continue;
                 }
 
+                _loadedScenes.Add(scene);
                 await SceneManager.LoadSceneAsync(scene.ToString(), LoadSceneMode.Additive)
                     .ToUniTask(Progress.Create<float>(value => 
                     {
                         progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
-                _loadedScenes.Add(scene);
 
                 processedScenesCount++;
             }
@@ -101,12 +101,12 @@ namespace Crossoverse.Toolkit.SceneTransition
                     continue;
                 }
 
+                _loadedScenes.Remove(loadedScene);
                 await SceneManager.UnloadSceneAsync(loadedScene.ToString())
                     .ToUniTask(Progress.Create<float>(value => 
                     {
                         progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
-                _loadedScenes.Remove(loadedScene);
 
                 processedScenesCount++;
             }
@@ -125,12 +125,12 @@ namespace Crossoverse.Toolkit.SceneTransition
                     continue;
                 }
 
+                _loadedScenes.Add(nextStageScene);
                 await SceneManager.LoadSceneAsync(nextStageScene.ToString(), LoadSceneMode.Additive)
                     .ToUniTask(Progress.Create<float>(value => 
                     {
                         progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
-                _loadedScenes.Add(nextStageScene);
 
                 processedScenesCount++;
             }
