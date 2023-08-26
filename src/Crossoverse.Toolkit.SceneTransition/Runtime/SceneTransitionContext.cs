@@ -32,15 +32,7 @@ namespace Crossoverse.Toolkit.SceneTransition
         public virtual async UniTask LoadGlobalScenesAndInitialStageAsync()
         {
             await LoadGlobalScenesAsync(true);
-            await TransitAsync(_stages[0]);
-        }
-
-        public virtual async UniTask LoadStageAsync(Stage<TStage, TScene> nextStage)
-        {
-            if (_stages.Contains(nextStage))
-            {
-                await TransitAsync(nextStage);
-            }
+            await LoadStageAsync(_stages[0]);
         }
 
         public virtual async UniTask LoadGlobalScenesAsync(bool onInitialize = false)
@@ -52,8 +44,10 @@ namespace Crossoverse.Toolkit.SceneTransition
             SceneManager.SetActiveScene(SceneManager.GetSceneByName(_initialActiveSceneId));
         }
 
-        public virtual async UniTask TransitAsync(Stage<TStage, TScene> nextStage)
+        public virtual async UniTask LoadStageAsync(Stage<TStage, TScene> nextStage)
         {
+            if (!_stages.Contains(nextStage)) return;
+
             foreach (var loadedScene in _loadedScenes.ToArray())
             {
                 //
