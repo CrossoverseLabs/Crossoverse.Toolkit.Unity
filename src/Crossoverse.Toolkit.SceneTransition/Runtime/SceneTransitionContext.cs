@@ -41,11 +41,15 @@ namespace Crossoverse.Toolkit.SceneTransition
                     progress?.Report(value * globalScenesRate);
                 }));
 
+            UnityEngine.Debug.Log($"[{nameof(SceneTransitionContext<TStage, TScene>.LoadGlobalScenesAndInitialStageAsync)}] Global scenes have been loaded.");
+
             await LoadStageAsync(_stages[0], 
                 Progress.Create<float>(value => 
                 {
                     progress?.Report(value * stageScenesRate + globalScenesRate);
                 }));
+
+            UnityEngine.Debug.Log($"[{nameof(SceneTransitionContext<TStage, TScene>.LoadGlobalScenesAndInitialStageAsync)}] Initial stage scenes have been loaded.");
         }
 
         public virtual async UniTask LoadGlobalScenesAsync(bool onInitialize = false, IProgress<float> progress = null)
@@ -74,6 +78,7 @@ namespace Crossoverse.Toolkit.SceneTransition
                     }));
 
                 processedScenesCount++;
+                UnityEngine.Debug.Log($"*****");
             }
 
             SceneManager.SetActiveScene(SceneManager.GetSceneByName(_initialActiveSceneId));
@@ -109,7 +114,10 @@ namespace Crossoverse.Toolkit.SceneTransition
                     }));
 
                 processedScenesCount++;
+                UnityEngine.Debug.Log($"*****");
             }
+
+            UnityEngine.Debug.Log($"[{nameof(SceneTransitionContext<TStage, TScene>.LoadStageAsync)}] Loaded scenes have been unloaded.");
 
             // Loading next stage scenes
             foreach (var nextStageScene in nextStage.SceneIds)
@@ -133,7 +141,10 @@ namespace Crossoverse.Toolkit.SceneTransition
                     }));
 
                 processedScenesCount++;
+                UnityEngine.Debug.Log($"*****");
             }
+
+            UnityEngine.Debug.Log($"[{nameof(SceneTransitionContext<TStage, TScene>.LoadStageAsync)}] Next stage scenes have been loaded.");
 
             SceneManager.SetActiveScene(SceneManager.GetSceneByName(nextStage.ActiveSceneId.ToString()));
 
