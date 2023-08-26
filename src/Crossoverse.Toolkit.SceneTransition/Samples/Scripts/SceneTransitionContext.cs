@@ -9,13 +9,13 @@ namespace Crossoverse.Toolkit.SceneTransition.Samples
         {
         }
 
-        public async UniTask LoadStageAsync(StageName nextStageId, IProgress<float> progress = null)
+        public async UniTask LoadStageAsync(StageName nextStageId, TimeSpan delayTimeOfSwitchingActiveScene = default, IProgress<float> progress = null)
         {
             foreach (var stage in _stages)
             {
                 if (stage.StageId == nextStageId)
                 {
-                    await LoadStageAsync(stage, Progress.Create<float>(value => 
+                    await base.LoadStageAsync(stage, delayTimeOfSwitchingActiveScene, Progress.Create<float>(value => 
                     {
                         UnityEngine.Debug.Log($"<color=lime>[{nameof(Samples.SceneTransitionContext)}] Stage loading progress: {value}</color>");
                     }));
@@ -24,9 +24,9 @@ namespace Crossoverse.Toolkit.SceneTransition.Samples
             }
         }
 
-        public override async UniTask LoadGlobalScenesAndInitialStageAsync(IProgress<float> progress = null)
+        public override async UniTask LoadGlobalScenesAndInitialStageAsync(TimeSpan delayTimeOfSwitchingActiveScene = default, IProgress<float> progress = null)
         {
-            await base.LoadGlobalScenesAndInitialStageAsync(Progress.Create<float>(value => 
+            await base.LoadGlobalScenesAndInitialStageAsync(delayTimeOfSwitchingActiveScene, Progress.Create<float>(value => 
             {
                 UnityEngine.Debug.Log($"<color=lime>[{nameof(Samples.SceneTransitionContext)}] Stage loading progress: {value}</color>");
             }));

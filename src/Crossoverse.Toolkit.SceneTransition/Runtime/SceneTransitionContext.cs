@@ -29,7 +29,7 @@ namespace Crossoverse.Toolkit.SceneTransition
             _loadedScenes = new HashSet<TScene>();
         }
 
-        public virtual async UniTask LoadGlobalScenesAndInitialStageAsync(IProgress<float> progress = null)
+        public virtual async UniTask LoadGlobalScenesAndInitialStageAsync(TimeSpan delayTimeOfSwitchingActiveScene = default, IProgress<float> progress = null)
         {
             var totalScenesCount = _globalScenes.Count + _stages[0].SceneIds.Count;
             var globalScenesRate = (float) _globalScenes.Count / totalScenesCount;
@@ -41,7 +41,7 @@ namespace Crossoverse.Toolkit.SceneTransition
                     progress?.Report(value * globalScenesRate);
                 }));
 
-            await LoadStageAsync(_stages[0], 
+            await LoadStageAsync(_stages[0], delayTimeOfSwitchingActiveScene,
                 Progress.Create<float>(value => 
                 {
                     progress?.Report(value * stageScenesRate + globalScenesRate);
@@ -79,7 +79,7 @@ namespace Crossoverse.Toolkit.SceneTransition
             SceneManager.SetActiveScene(SceneManager.GetSceneByName(_initialActiveSceneId));
         }
 
-        public virtual async UniTask LoadStageAsync(Stage<TStage, TScene> nextStage, IProgress<float> progress = null)
+        public virtual async UniTask LoadStageAsync(Stage<TStage, TScene> nextStage, TimeSpan delayTimeOfSwitchingActiveScene = default, IProgress<float> progress = null)
         {
             if (!_stages.Contains(nextStage)) return;
 
@@ -135,10 +135,12 @@ namespace Crossoverse.Toolkit.SceneTransition
                 processedScenesCount++;
             }
 
-            SceneManager.SetActiveScene(SceneManager.GetSceneByName(nextStage.ActiveSceneId.ToString()));
-
             _previousStage = _currentStage;
             _currentStage = nextStage.StageId;
+
+            await UniTask.Delay(delayTimeOfSwitchingActiveScene);
+
+            SceneManager.SetActiveScene(SceneManager.GetSceneByName(nextStage.ActiveSceneId.ToString()));
         }
     }
 }

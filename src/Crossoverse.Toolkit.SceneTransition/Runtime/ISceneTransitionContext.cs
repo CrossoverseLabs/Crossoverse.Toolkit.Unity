@@ -7,6 +7,6 @@ namespace Crossoverse.Toolkit.SceneTransition
         where TStage : struct, Enum
         where TScene : struct, Enum
     {
-        UniTask LoadStageAsync(Stage<TStage, TScene> nextStage, IProgress<float> progress = null);
+        UniTask LoadStageAsync(Stage<TStage, TScene> nextStage, TimeSpan delayTimeOfSwitchingActiveScene = default, IProgress<float> progress = null);
     }
 }
