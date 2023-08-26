@@ -1,0 +1,17 @@
+{
+    "name": "Crossoverse.Toolkit.SceneTransition.Samples",
+    "rootNamespace": "Crossoverse.Toolkit.SceneTransition.Samples",
+    "references": [
+        "Crossoverse.Toolkit.SceneTransition",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
