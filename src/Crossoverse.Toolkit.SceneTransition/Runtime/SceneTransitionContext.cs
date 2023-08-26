@@ -35,7 +35,7 @@ namespace Crossoverse.Toolkit.SceneTransition
             var globalScenesRate = (float) _globalScenes.Count / totalScenesCount;
             var stageScenesRate = (float) _stages[0].SceneIds.Count / totalScenesCount;
 
-            await LoadGlobalScenesAsync(true,
+            await LoadGlobalScenesAsync(
                 Progress.Create<float>(value => 
                 {
                     progress?.Report(value * globalScenesRate);
@@ -48,7 +48,7 @@ namespace Crossoverse.Toolkit.SceneTransition
                 }));
         }
 
-        public virtual async UniTask LoadGlobalScenesAsync(bool onInitialize = false, IProgress<float> progress = null)
+        public virtual async UniTask LoadGlobalScenesAsync(IProgress<float> progress = null)
         {
             var processedScenesCount = 0;
             var scenesToProcessCount = _globalScenes.Count;
