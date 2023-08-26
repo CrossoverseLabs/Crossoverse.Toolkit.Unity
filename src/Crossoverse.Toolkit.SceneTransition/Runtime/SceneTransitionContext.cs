@@ -51,15 +51,28 @@ namespace Crossoverse.Toolkit.SceneTransition
         public virtual async UniTask LoadGlobalScenesAsync(bool onInitialize = false, IProgress<float> progress = null)
         {
             var processedScenesCount = 0;
-            var totalScenesCount = _globalScenes.Count;
+            var scenesToProcessCount = _globalScenes.Count;
 
             foreach (var scene in _globalScenes)
             {
+                //
+                // NOTE:
+                // - Avoid reloading already loaded scenes.
+                // - 既にロードされているシーンは再ロードしないようにする。
+                //
+                if (_loadedScenes.Contains(scene))
+                {
+                    scenesToProcessCount--;
+                    continue;
+                }
+
                 await SceneManager.LoadSceneAsync(scene.ToString(), LoadSceneMode.Additive)
                     .ToUniTask(Progress.Create<float>(value => 
                     {
-                        progress?.Report((value + processedScenesCount) / totalScenesCount);
+                        progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
+                _loadedScenes.Add(scene);
+
                 processedScenesCount++;
             }
 
@@ -71,9 +84,10 @@ namespace Crossoverse.Toolkit.SceneTransition
             if (!_stages.Contains(nextStage)) return;
 
             var loadedScenesArray = _loadedScenes.ToArray();
-            var totalScenesCount = loadedScenesArray.Length + nextStage.SceneIds.Count;
+            var scenesToProcessCount = loadedScenesArray.Length + nextStage.SceneIds.Count;
             var processedScenesCount = 0;
 
+            // Unloading previous stage scenes
             foreach (var loadedScene in loadedScenesArray)
             {
                 //
@@ -81,22 +95,23 @@ namespace Crossoverse.Toolkit.SceneTransition
                 // - Avoid unloading already loaded scenes if they will be used in the next stage.
                 // - 既にロードされているシーンが次のステージで使われる場合はアンロードしないようにする。
                 //
-                if (nextStage.SceneIds.Contains(loadedScene))
+                if (nextStage.SceneIds.Contains(loadedScene) || _globalScenes.Contains(loadedScene))
                 {                
-                    processedScenesCount++;
+                    scenesToProcessCount--;
                     continue;
                 }
 
                 await SceneManager.UnloadSceneAsync(loadedScene.ToString())
                     .ToUniTask(Progress.Create<float>(value => 
                     {
-                        progress?.Report((value + processedScenesCount) / totalScenesCount);
+                        progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
                 _loadedScenes.Remove(loadedScene);
 
                 processedScenesCount++;
             }
 
+            // Loading next stage scenes
             foreach (var nextStageScene in nextStage.SceneIds)
             {
                 //
@@ -106,14 +121,14 @@ namespace Crossoverse.Toolkit.SceneTransition
                 //
                 if (_loadedScenes.Contains(nextStageScene))
                 {
-                    processedScenesCount++;
+                    scenesToProcessCount--;
                     continue;
                 }
 
                 await SceneManager.LoadSceneAsync(nextStageScene.ToString(), LoadSceneMode.Additive)
                     .ToUniTask(Progress.Create<float>(value => 
                     {
-                        progress?.Report((value + processedScenesCount) / totalScenesCount);
+                        progress?.Report((value + processedScenesCount) / scenesToProcessCount);
                     }));
                 _loadedScenes.Add(nextStageScene);
 
