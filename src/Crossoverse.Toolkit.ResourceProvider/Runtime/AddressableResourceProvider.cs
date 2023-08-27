@@ -1,5 +1,5 @@
 #if ADDRESSABLES
-
+using System;
 using System.Collections.Generic;
 using UnityEngine.AddressableAssets;
 using Cysharp.Threading.Tasks;
@@ -20,13 +20,17 @@ namespace Crossoverse.Toolkit.ResourceProvider
             return await Addressables.GetDownloadSizeAsync(path);
         }
 
-        public async UniTask<Resource> LoadResourceAsync(string path);
+        public async UniTask<Resource> LoadResourceAsync(string path, IProgress<float> progress = null)
         {
             if (ResourceLoaded(path)) { return _loadedResources[path]; }
 
-            var addressable = await Addressables.LoadAssetAsync<UnityEngine.Object>(path);
-            var resource = new Resource(path, addressable);
+            var addressable = await Addressables.LoadAssetAsync<UnityEngine.Object>(path)
+                .ToUniTask(Progress.Create<float>(value =>
+                {
+                    progress?.Report(value);
+                }));
 
+            var resource = new Resource(path, addressable);
             _loadedResources[path] = resource;
 
             return resource;
