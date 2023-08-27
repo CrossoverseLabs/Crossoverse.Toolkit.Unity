@@ -14,8 +14,13 @@ namespace Crossoverse.Toolkit.ResourceProvider
         {
             await Addressables.LoadContentCatalogAsync(catalogPath, true, null);
         }
-        
-        public async UniTask<Resource> LoadResourceAsync(string path)
+
+        public async UniTask<long> GetDownloadSizeAsync(string path)
+        {
+            return await Addressables.GetDownloadSizeAsync(path);
+        }
+
+        public async UniTask<Resource> LoadResourceAsync(string path);
         {
             if (ResourceLoaded(path)) { return _loadedResources[path]; }
 

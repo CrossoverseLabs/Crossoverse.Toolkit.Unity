@@ -5,6 +5,7 @@ namespace Crossoverse.Toolkit.ResourceProvider
 {
     public interface IResourceProvider
     {
+        UniTask<long> GetDownloadSizeAsync(string path);
         UniTask<Resource> LoadResourceAsync(string path);
         void UnloadResource(string path);
     }
